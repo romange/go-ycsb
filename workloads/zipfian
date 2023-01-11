@@ -1,0 +1,11 @@
+recordcount=100000
+workload=core
+requestdistribution=zipfian
+table=a
+redis.datatype=string
+insertcount=500
+operationcount=7000
+readproportion=0
+updateproportion=0
+insertproportion=1
+keyprefix="u"

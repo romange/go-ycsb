@@ -30,6 +30,7 @@ type redisClient interface {
 	Scan(ctx context.Context, cursor uint64, match string, count int64) *goredis.ScanCmd
 	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *goredis.StatusCmd
 	Del(ctx context.Context, keys ...string) *goredis.IntCmd
+	SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) *goredis.BoolCmd
 	FlushDB(ctx context.Context) *goredis.StatusCmd
 	Close() error
 }
@@ -197,7 +198,7 @@ func (r *redis) Insert(ctx context.Context, table string, key string, values map
 	case STRING_DATATYPE:
 		fallthrough
 	default:
-		err = r.client.Set(ctx, getKeyName(table, key), string(data), 0).Err()
+		err = r.client.SetNX(ctx, getKeyName(table, key), string(data), 0).Err()
 	}
 	return
 }
@@ -311,10 +312,8 @@ func getOptionsSingle(p *properties.Properties) *goredis.Options {
 		fmt.Println(fmt.Sprintf("Setting %s=%d (from <threadcount>) given you haven't specified a value.", redisPoolSize, opts.PoolSize))
 	}
 	opts.MinIdleConns = p.GetInt(redisMinIdleConns, 0)
-	opts.MaxConnAge = p.GetDuration(redisMaxConnAge, 0)
 	opts.PoolTimeout = p.GetDuration(redisPoolTimeout, time.Second+opts.ReadTimeout)
-	opts.IdleTimeout = p.GetDuration(redisIdleTimeout, time.Minute*5)
-	opts.IdleCheckFrequency = p.GetDuration(redisIdleCheckFreq, time.Minute)
+	opts.ConnMaxIdleTime = p.GetDuration(redisIdleTimeout, time.Minute*5)
 	opts.TLSConfig = parseTLS(p)
 
 	return opts
@@ -343,10 +342,8 @@ func getOptionsCluster(p *properties.Properties) *goredis.ClusterOptions {
 		fmt.Println(fmt.Sprintf("Setting %s=%d (from <threadcount>) given you haven't specified a value.", redisPoolSize, opts.PoolSize))
 	}
 	opts.MinIdleConns = p.GetInt(redisMinIdleConns, 0)
-	opts.MaxConnAge = p.GetDuration(redisMaxConnAge, 0)
 	opts.PoolTimeout = p.GetDuration(redisPoolTimeout, time.Second+opts.ReadTimeout)
-	opts.IdleTimeout = p.GetDuration(redisIdleTimeout, time.Minute*5)
-	opts.IdleCheckFrequency = p.GetDuration(redisIdleCheckFreq, time.Minute)
+	opts.ConnMaxIdleTime = p.GetDuration(redisIdleTimeout, time.Minute*5)
 
 	opts.TLSConfig = parseTLS(p)
 
